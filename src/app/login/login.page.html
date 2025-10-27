@@ -1,0 +1,42 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Login</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <form (ngSubmit)="login()" #f="ngForm" novalidate>
+    <!-- Email Field -->
+    <ion-item>
+      <ion-label position="floating">Email</ion-label>
+      <ion-input [(ngModel)]="email" name="email" type="email" required email #emailCtrl="ngModel"></ion-input>
+    </ion-item>
+    <ion-note color="danger" *ngIf="emailCtrl.invalid && emailCtrl.touched">
+      <ng-container *ngIf="emailCtrl.errors?.['required']">
+        Email is required.
+      </ng-container>
+      <ng-container *ngIf="emailCtrl.errors?.['email']">
+        Please enter a valid email address.
+      </ng-container>
+    </ion-note>
+
+    <!-- Password Field -->
+    <ion-item>
+      <ion-label position="floating">Password</ion-label>
+      <ion-input [(ngModel)]="password" name="password" type="password" required minlength="6"
+        #passwordCtrl="ngModel"></ion-input>
+    </ion-item>
+    <ion-note color="danger" *ngIf="passwordCtrl.invalid && passwordCtrl.touched">
+      <ng-container *ngIf="passwordCtrl.errors?.['required']">
+        Password is required.
+      </ng-container>
+      <ng-container *ngIf="passwordCtrl.errors?.['minlength']">
+        Password must be at least 6 characters long.
+      </ng-container>
+    </ion-note>
+
+    <ion-button expand="block" type="submit" [disabled]="!f.form.valid" class="ion-margin-top">
+      Login
+    </ion-button>
+  </form>
+</ion-content>

@@ -1,20 +1,33 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Home</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="logout()">Logout</ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="ion-padding">
+  <ion-button expand="block" color="success" (click)="capture()">Capture Photo</ion-button>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-  </div>
+  <ion-grid>
+    <ion-row>
+      <ion-col size="6" *ngFor="let p of photos; let i = index">
+        <ion-card>
+          <img [src]="p.webPath ? p.webPath : placeholder" style="width: 100%; height: auto;" />
+
+          <ion-card-content>
+            <p *ngIf="p.lat !== undefined">
+              Lat: {{ p.lat | number:'1.4-6' }}, Lng: {{ p.lng | number:'1.4-6' }}
+            </p>
+            <p *ngIf="p.lat === undefined">Location not available</p>
+
+            <p>{{ p.timestamp }}</p>
+
+            <ion-button color="danger" size="small" (click)="remove(i)">Delete</ion-button>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
 </ion-content>
