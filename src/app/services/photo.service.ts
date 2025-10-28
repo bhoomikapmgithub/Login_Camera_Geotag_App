@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Geolocation, Position  } from '@capacitor/geolocation';
+import { Geolocation } from '@capacitor/geolocation';
 import { Preferences } from '@capacitor/preferences';
+import { Capacitor } from '@capacitor/core';
 
 export interface SavedPhoto {
-  filepath: string;
   webPath?: string;
   lat?: number;
   lng?: number;
@@ -12,11 +12,11 @@ export interface SavedPhoto {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PhotoService {
-  private readonly storageKey = 'photos';
   photos: SavedPhoto[] = [];
+  private readonly storageKey = 'photos';
 
   async loadPhotos() {
     const res = await Preferences.get({ key: this.storageKey });
@@ -27,64 +27,88 @@ export class PhotoService {
     await Preferences.set({ key: this.storageKey, value: JSON.stringify(this.photos) });
   }
 
+  private async getLocation() {
+    try {
+      const pos = await Geolocation.getCurrentPosition();
+      return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    } catch {
+      return { lat: undefined, lng: undefined };
+    }
+  }
+
   async capturePhoto() {
-    if (!('capacitor' in window)) {
-      return new Promise<void>(async (resolve, reject) => {
-        try {
-          const video = document.createElement('video');
-          video.autoplay = true;
-
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          video.srcObject = stream;
-          document.body.appendChild(video);
-
-          setTimeout(() => {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            stream.getTracks().forEach(track => track.stop());
-            video.remove();
-
-            const newPhoto: SavedPhoto = {
-              filepath: '',
-              webPath: canvas.toDataURL('image/png'),
-              lat: undefined,
-              lng: undefined,
-              timestamp: new Date().toLocaleString()
-            };
-            this.photos.unshift(newPhoto);
-            this.savePhotos();
-            resolve();
-          }, 2000);
-
-        } catch (err) {
-          console.error('Error accessing webcam', err);
-          reject(err);
-        }
-      });
+    if (Capacitor.getPlatform() === 'web') {
+      await this.captureUsingWebcam();
     } else {
+      await this.handleCamera(CameraSource.Camera);
+    }
+  }
+
+  async selectImage() {
+    await this.handleCamera(CameraSource.Photos);
+  }
+
+  private async handleCamera(source: CameraSource) {
+    try {
       const image = await Camera.getPhoto({
         resultType: CameraResultType.Uri,
-        source: CameraSource.Camera,
-        quality: 90
+        source,
+        quality: 90,
       });
-
-const coords: Position | null = await Geolocation.getCurrentPosition().catch(() => null);
+      const loc = await this.getLocation();
 
       const newPhoto: SavedPhoto = {
-        filepath: image.webPath || '',
         webPath: image.webPath,
-        lat: coords?.coords.latitude,
-        lng: coords?.coords.longitude,
+        lat: loc.lat,
+        lng: loc.lng,
         timestamp: new Date().toLocaleString(),
       };
 
       this.photos.unshift(newPhoto);
       await this.savePhotos();
+    } catch (err) {
+      console.error('Error:', err);
     }
+  }
+
+  private async captureUsingWebcam() {
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        const video = document.createElement('video');
+        video.autoplay = true;
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        document.body.appendChild(video);
+
+        setTimeout(async () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const base64Image = canvas.toDataURL('image/png');
+
+          stream.getTracks().forEach(t => t.stop());
+          video.remove();
+
+          const loc = await this.getLocation();
+
+          const newPhoto: SavedPhoto = {
+            webPath: base64Image,
+            lat: loc.lat,
+            lng: loc.lng,
+            timestamp: new Date().toLocaleString(),
+          };
+
+          this.photos.unshift(newPhoto);
+          await this.savePhotos();
+          resolve();
+        }, 2000);
+      } catch (err) {
+        console.error('Webcam error:', err);
+        reject(err);
+      }
+    });
   }
 
   async removePhoto(index: number) {

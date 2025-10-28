@@ -26,20 +26,20 @@ export class HomePage {
     await this.ps.loadPhotos();
   }
 
-  async capture() {
+  async capturePhoto() {
     await this.ps.capturePhoto();
   }
 
-  // 🗑 Confirm before deleting a photo
+  async selectImage() {
+    await this.ps.selectImage();
+  }
+
   async remove(index: number) {
     const alert = await this.alertCtrl.create({
       header: 'Delete Photo',
       message: 'Are you sure you want to delete this photo?',
       buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-        },
+        { text: 'Cancel', role: 'cancel' },
         {
           text: 'Delete',
           handler: async () => {
@@ -51,16 +51,12 @@ export class HomePage {
     await alert.present();
   }
 
-  // 🚪 Confirm before logout
   async logout() {
     const alert = await this.alertCtrl.create({
       header: 'Logout',
       message: 'Are you sure you want to logout?',
       buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-        },
+        { text: 'Cancel', role: 'cancel' },
         {
           text: 'Logout',
           handler: async () => {
